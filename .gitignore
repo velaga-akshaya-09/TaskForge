@@ -1,0 +1,20 @@
+# Object files
+
+*.o
+
+# Main executable
+
+taskforge
+
+# Test executables
+
+test_taskforge
+test_cancel
+test_failure
+test_stress
+
+# Editor and temporary files
+
+*~
+*.swp
+*.swo
