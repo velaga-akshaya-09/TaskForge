@@ -1,20 +1,47 @@
-# Object files
-
-*.o
-
-# Main executable
-
+# TaskForge application
 taskforge
 
-# Test executables
+# Object files
+*.o
 
+# Test executables
 test_taskforge
 test_cancel
 test_failure
 test_stress
 
-# Editor and temporary files
+# CO demonstration executables
+os_service_demo
+command_execution_demo
+process_lifecycle_demo
+process_scheduling_demo
+process_pitfall_demo
+pipe_demo
+fifo_demo
+signal_demo
+process_group_demo
+memory_allocation_demo
+address_space_demo
+mmap_demo
+page_fault_demo
+cow_demo
+memory_error_demo
+file_io_demo
+file_metadata_demo
+buffered_io_demo
+mmap_file_demo
+filesystem_demo
+semaphore_demo
+race_mutex_demo
+deadlock_demo
+advanced_sync_demo
 
-*~
+# Generated demonstration files
+taskforge_io_demo.txt
+taskforge_buffered.txt
+taskforge_unbuffered.txt
+taskforge_mmap.txt
+
+# Temporary files
 *.swp
-*.swo
+*.tmp
