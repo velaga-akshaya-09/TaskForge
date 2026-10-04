@@ -1,63 +1,942 @@
-# TaskForge — A Thread-Pool Task Engine
+# TaskForge — A Thread-Pool Task Engine and Linux Systems Programming Demonstrator
 
-## Overview
+TaskForge is a lightweight C-based task execution engine built using POSIX threads. It provides a reusable worker-thread pool, priority-based task scheduling, task cancellation, synchronization, task monitoring, statistics, and an interactive command-line interface.
 
-TaskForge is a lightweight task execution engine written in C using POSIX threads (`pthreads`).
+In addition to the core thread-pool engine, TaskForge contains a collection of Linux systems-programming demonstrations covering processes, IPC, memory management, file systems, file I/O, concurrency, and synchronization.
 
-It implements a reusable pool of worker threads that execute submitted tasks from a shared task queue. Instead of creating a new thread for every task, TaskForge creates a fixed number of worker threads and reuses them throughout the lifetime of the engine.
-
-The project demonstrates practical concepts in concurrent programming, operating systems, thread synchronization, scheduling, task management, cancellation, and performance monitoring.
+The project is designed to provide practical demonstrations of operating-system concepts using standard C, Linux system calls, POSIX APIs, and pthreads.
 
 ---
 
-## Features
+## Project Objectives
 
-* Fixed-size worker thread pool
-* Reusable worker threads
-* Thread-safe task submission
-* Priority-based task scheduling
-* FIFO ordering for tasks with equal priority
-* Four task priority levels
-* Individual task waiting
-* Waiting for all tasks
-* Queued-task cancellation
-* Task success/failure tracking
-* Task execution-time measurement
-* Queue peak-size tracking
-* Average execution-time statistics
-* Maximum execution-time statistics
-* Task status inspection
-* Cleanup callbacks
-* Interactive command-line interface
-* Automated functional tests
-* Stress testing with 100 tasks
-* Graceful worker shutdown
+TaskForge demonstrates:
 
----
-
-## Priority Levels
-
-TaskForge supports four priority levels:
-
-| Priority | Value |
-| -------- | ----: |
-| LOW      |     1 |
-| NORMAL   |     2 |
-| HIGH     |     3 |
-| CRITICAL |     4 |
-
-Higher-priority tasks are placed ahead of lower-priority tasks in the queue.
-
-If two tasks have the same priority, they are ordered using their submission sequence number. Therefore, tasks with equal priority follow FIFO ordering.
+* Operating-system services and system calls
+* User-space and kernel-service interaction
+* Process creation and process lifecycle
+* Process scheduling concepts
+* Inter-process communication
+* Signals and asynchronous notifications
+* Process groups and sessions
+* Virtual memory concepts
+* Dynamic memory allocation
+* Page faults and demand paging
+* Copy-on-write
+* Memory debugging
+* Linux file descriptors and file I/O
+* Inodes and file metadata
+* Virtual File System concepts
+* Buffered and system-call-based I/O
+* Memory-mapped files
+* POSIX threads
+* Race conditions
+* Mutexes
+* Condition variables
+* Counting semaphores
+* Deadlocks
+* Read-write locks and advanced synchronization
 
 ---
 
-## Architecture
+# 1. TaskForge Core Engine
 
-TaskForge is divided into several modules.
+The main TaskForge engine implements a reusable worker-thread pool.
+
+## Core architecture
+
+```text
+                         USER
+                          |
+                          v
+                 +----------------+
+                 | Interactive CLI|
+                 |    cli.c       |
+                 +-------+--------+
+                         |
+                         v
+                 +----------------+
+                 |   TaskForge    |
+                 |  taskforge.c   |
+                 +-------+--------+
+                         |
+             +-----------+-----------+
+             |                       |
+             v                       v
+      +-------------+        +--------------+
+      | Task Queue  |        | Task Registry|
+      |  queue.c    |        |              |
+      +------+------+        +--------------+
+             |
+             v
+      +-------------+
+      | Scheduler   |
+      |scheduler.c  |
+      +------+------+
+             |
+             v
+      +--------------------+
+      | Worker Threads     |
+      |    worker.c        |
+      +---------+----------+
+                |
+                v
+             TASKS
+```
+
+---
+
+# 2. Core Features
+
+## Worker Thread Pool
+
+TaskForge creates a fixed number of reusable worker threads.
+
+Workers:
+
+1. Wait for tasks.
+2. Receive a task from the shared queue.
+3. Execute the task.
+4. Update the task state.
+5. Update statistics.
+6. Notify waiting threads.
+7. Execute cleanup callbacks when required.
+
+---
+
+## Priority Scheduling
+
+Tasks have four priority levels:
+
+```text
+LOW       = 1
+NORMAL    = 2
+HIGH      = 3
+CRITICAL  = 4
+```
+
+Higher-priority tasks execute first.
+
+Tasks having the same priority are scheduled using FIFO ordering.
+
+---
+
+## Task States
+
+Every task can move through the following states:
+
+```text
+QUEUED
+   |
+   v
+RUNNING
+   |
+   +------------+
+   |            |
+   v            v
+COMPLETED    FAILED
+```
+
+Queued tasks can also be cancelled:
+
+```text
+QUEUED
+   |
+   v
+CANCELLED
+```
+
+---
+
+## Task Cancellation
+
+Queued tasks can be cancelled before a worker executes them.
+
+The engine maintains cancellation statistics separately from completed and failed tasks.
+
+---
+
+## Waiting
+
+TaskForge supports:
+
+```text
+wait <id>
+```
+
+for waiting on an individual task.
+
+It also supports:
+
+```text
+waitall
+```
+
+for waiting until all submitted tasks finish.
+
+---
+
+## Statistics
+
+The engine tracks:
+
+* Submitted tasks
+* Completed tasks
+* Failed tasks
+* Cancelled tasks
+* Peak queue size
+* Total execution time
+* Maximum execution time
+* Average execution time
+
+---
+
+# 3. Interactive CLI
+
+The TaskForge command-line interface provides:
+
+```text
+help
+submit
+status <id>
+cancel <id>
+wait <id>
+waitall
+stats
+shutdown
+exit
+```
+
+Example:
+
+```text
+taskforge> submit
+taskforge> status 1
+taskforge> stats
+taskforge> waitall
+taskforge> shutdown
+```
+
+---
+
+# 4. Operating System and Systems Programming Demonstrations
+
+TaskForge contains practical demonstrations corresponding to operating-system concepts.
+
+All demonstrations are located inside:
+
+```text
+demos/
+```
+
+---
+
+# CO-1 — The OS as a Service Layer
+
+## Topics Covered
+
+* Operating system as a service abstraction
+* User space and kernel services
+* System calls
+* Linux system information
+* Shell role in command execution
+* `fork()`
+* `exec()`
+* `waitpid()`
+* Systems programming fundamentals
+
+## Demonstrations
+
+### `os_service_demo.c`
+
+Demonstrates the relationship:
+
+```text
+User Application
+       |
+       v
+System Call Interface
+       |
+       v
+Linux Kernel Services
+```
+
+It uses Linux system calls such as:
+
+```c
+syscall()
+write()
+getpid()
+getppid()
+```
+
+It also retrieves Linux system information using `uname()`.
+
+Run:
+
+```bash
+./os_service_demo
+```
+
+---
+
+### `command_execution_demo.c`
+
+Demonstrates a simplified command execution journey:
+
+```text
+User Command
+     |
+     v
+Shell/User Program
+     |
+     v
+fork()
+     |
+     v
+Child Process
+     |
+     v
+exec()
+     |
+     v
+Command Program
+     |
+     v
+waitpid()
+     |
+     v
+Parent Continues
+```
+
+Run:
+
+```bash
+./command_execution_demo
+```
+
+---
+
+# CO-2 — Processes and Process Control
+
+## Topics Covered
+
+* Process abstraction
+* Process creation
+* Process execution
+* Process lifecycle
+* Process synchronization
+* Process termination
+* Process scheduling
+* Process management pitfalls
+* Zombie processes
+
+## Demonstrations
+
+### `process_lifecycle_demo.c`
+
+Demonstrates:
+
+```text
+CREATED
+   |
+   v
+RUNNING
+   |
+   v
+WAITING
+   |
+   v
+TERMINATED
+```
+
+Uses:
+
+```c
+fork()
+waitpid()
+exit()
+```
+
+Run:
+
+```bash
+./process_lifecycle_demo
+```
+
+---
+
+### `process_scheduling_demo.c`
+
+Demonstrates priority-based scheduling with FIFO ordering for equal priorities.
+
+Scheduling rule:
+
+```text
+Higher Priority
+      ↓
+First
+
+Same Priority
+      ↓
+FIFO
+```
+
+Run:
+
+```bash
+./process_scheduling_demo
+```
+
+---
+
+### `process_pitfall_demo.c`
+
+Demonstrates the zombie-process problem and explains why the parent should collect terminated children using `wait()` or `waitpid()`.
+
+Run:
+
+```bash
+./process_pitfall_demo
+```
+
+---
+
+# CO-3 — Inter-Process Communication
+
+## Topics Covered
+
+* IPC
+* Anonymous pipes
+* Named pipes / FIFOs
+* POSIX signals
+* Signal handlers
+* Asynchronous notifications
+* Process groups
+* Sessions
+
+## Demonstrations
+
+### `pipe_demo.c`
+
+Demonstrates anonymous pipe communication:
+
+```text
+Parent
+  |
+  | write()
+  v
+Anonymous Pipe
+  |
+  | read()
+  v
+Child
+```
+
+Run:
+
+```bash
+./pipe_demo
+```
+
+---
+
+### `fifo_demo.c`
+
+Demonstrates named-pipe communication using:
+
+```c
+mkfifo()
+open()
+read()
+write()
+```
+
+Run:
+
+```bash
+./fifo_demo
+```
+
+---
+
+### `signal_demo.c`
+
+Demonstrates POSIX signals using:
+
+```c
+sigaction()
+kill()
+pause()
+SIGUSR1
+```
+
+Communication:
+
+```text
+Parent
+  |
+  | SIGUSR1
+  v
+Child
+  |
+  v
+Signal Handler
+```
+
+Run:
+
+```bash
+./signal_demo
+```
+
+---
+
+### `process_group_demo.c`
+
+Demonstrates:
+
+```c
+setpgid()
+setsid()
+getpgrp()
+getsid()
+```
+
+It shows the relationship between:
+
+* Processes
+* Process groups
+* Sessions
+
+Run:
+
+```bash
+./process_group_demo
+```
+
+---
+
+# CO-4 — Memory Management
+
+## Topics Covered
+
+* Virtual memory
+* Linux process address space
+* Dynamic memory allocation
+* `malloc()`
+* `calloc()`
+* `realloc()`
+* `free()`
+* Memory mapping
+* Page faults
+* Demand paging behavior
+* Copy-on-write
+* Memory errors
+* AddressSanitizer
+
+## Demonstrations
+
+### `memory_allocation_demo.c`
+
+Demonstrates:
+
+```c
+malloc()
+calloc()
+realloc()
+free()
+```
+
+and compares stack and heap memory.
+
+Run:
+
+```bash
+./memory_allocation_demo
+```
+
+---
+
+### `address_space_demo.c`
+
+Demonstrates Linux process memory regions such as:
+
+```text
+Read-only data
+Initialized data
+BSS
+Heap
+Stack
+Shared libraries
+```
+
+It also reads:
+
+```text
+/proc/self/maps
+```
+
+Run:
+
+```bash
+./address_space_demo
+```
+
+---
+
+### `mmap_demo.c`
+
+Demonstrates anonymous memory mapping using:
+
+```c
+mmap()
+munmap()
+```
+
+Run:
+
+```bash
+./mmap_demo
+```
+
+---
+
+### `page_fault_demo.c`
+
+Maps a number of anonymous pages and touches each page while observing changes in the process's minor page-fault count.
+
+Run:
+
+```bash
+./page_fault_demo
+```
+
+This demonstrates page-fault behavior and demand allocation at user-space observable level.
+
+---
+
+### `cow_demo.c`
+
+Demonstrates copy-on-write behavior after:
+
+```c
+fork()
+```
+
+The child modifies its copy of a variable while the parent's value remains unchanged.
+
+Run:
+
+```bash
+./cow_demo
+```
+
+---
+
+### `memory_error_demo.c`
+
+Contains an intentional use-after-free example.
+
+It is compiled with AddressSanitizer:
+
+```bash
+make memory_error_demo
+```
+
+Run:
+
+```bash
+./memory_error_demo
+```
+
+AddressSanitizer reports the invalid heap access.
+
+This demonstration is intentionally expected to terminate with a memory-error report.
+
+---
+
+# CO-5 — File Systems and File I/O in Linux
+
+## Topics Covered
+
+* Unix file abstraction
+* File descriptors
+* Linux file I/O system calls
+* File metadata
+* Inodes
+* File naming
+* VFS concept
+* Buffered I/O
+* System-call/file-descriptor I/O
+* Memory-mapped file I/O
+* Filesystem information
+
+## Demonstrations
+
+### `file_io_demo.c`
+
+Demonstrates:
+
+```c
+open()
+read()
+write()
+lseek()
+close()
+```
+
+and shows how Linux represents an opened file using a file descriptor.
+
+Run:
+
+```bash
+./file_io_demo
+```
+
+---
+
+### `file_metadata_demo.c`
+
+Uses:
+
+```c
+stat()
+```
+
+to obtain metadata such as:
+
+* Inode number
+* File size
+* Owner UID
+* Owner GID
+* Hard-link count
+* Permissions
+* File type
+* Timestamps
+
+Run:
+
+```bash
+./file_metadata_demo
+```
+
+---
+
+### `buffered_io_demo.c`
+
+Compares:
+
+### Buffered standard I/O
+
+```c
+fopen()
+fprintf()
+fgets()
+fclose()
+```
+
+with:
+
+### File-descriptor/system-call I/O
+
+```c
+open()
+write()
+read()
+close()
+```
+
+Run:
+
+```bash
+./buffered_io_demo
+```
+
+---
+
+### `mmap_file_demo.c`
+
+Demonstrates memory-mapped file access using:
+
+```c
+mmap()
+msync()
+munmap()
+```
+
+A file is mapped into the process address space and modified through the mapping.
+
+Run:
+
+```bash
+./mmap_file_demo
+```
+
+---
+
+### `filesystem_demo.c`
+
+Demonstrates Linux filesystem information using:
+
+```c
+statvfs()
+statfs()
+```
+
+It also explains the role of the Linux Virtual File System:
+
+```text
+Application
+     |
+     v
+Linux File APIs
+     |
+     v
+VFS
+     |
+     v
+Filesystem Implementation
+```
+
+Run:
+
+```bash
+./filesystem_demo
+```
+
+The reported filesystem type depends on the environment in which TaskForge is executed.
+
+---
+
+# CO-6 — Concurrency and Synchronization
+
+## Topics Covered
+
+* Concurrency
+* Threads and processes
+* POSIX threads
+* Shared data
+* Race conditions
+* Mutexes
+* Condition variables
+* Thread coordination
+* Counting semaphores
+* Deadlocks
+* Concurrency hazards
+* Read-write locks
+* Advanced synchronization
+
+---
+
+## Core TaskForge Synchronization
+
+The TaskForge engine uses POSIX synchronization primitives including:
+
+```c
+pthread_mutex_t
+pthread_cond_t
+```
+
+The shared task queue and task registry are protected against concurrent access.
+
+Worker threads coordinate using condition variables.
+
+---
+
+### `semaphore_demo.c`
+
+Demonstrates a counting semaphore controlling access to a shared resource.
+
+Uses:
+
+```c
+sem_init()
+sem_wait()
+sem_post()
+sem_destroy()
+```
+
+Run:
+
+```bash
+./semaphore_demo
+```
+
+---
+
+### `race_mutex_demo.c`
+
+Demonstrates a race condition using multiple threads modifying shared data.
+
+It then protects the critical section using:
+
+```c
+pthread_mutex_lock()
+pthread_mutex_unlock()
+```
+
+Run:
+
+```bash
+./race_mutex_demo
+```
+
+---
+
+### `deadlock_demo.c`
+
+Demonstrates a deadlock scenario:
+
+```text
+Thread 1:
+    Lock A
+       ↓
+    Request B
+
+Thread 2:
+    Lock B
+       ↓
+    Request A
+```
+
+This produces a circular-wait condition.
+
+Timed mutex acquisition is used so the demonstration does not remain blocked indefinitely.
+
+Run:
+
+```bash
+./deadlock_demo
+```
+
+---
+
+### `advanced_sync_demo.c`
+
+Demonstrates POSIX read-write locks:
+
+```c
+pthread_rwlock_rdlock()
+pthread_rwlock_wrlock()
+pthread_rwlock_unlock()
+```
+
+Multiple readers can access shared data concurrently while a writer obtains exclusive access.
+
+Run:
+
+```bash
+./advanced_sync_demo
+```
+
+---
+
+# 5. Project Directory Structure
 
 ```text
 TaskForge/
+│
 ├── include/
 │   ├── taskforge.h
 │   ├── task.h
@@ -83,674 +962,261 @@ TaskForge/
 │   ├── test_failure.c
 │   └── test_stress.c
 │
+├── demos/
+│   ├── os_service_demo.c
+│   ├── command_execution_demo.c
+│   ├── process_lifecycle_demo.c
+│   ├── process_scheduling_demo.c
+│   ├── process_pitfall_demo.c
+│   ├── pipe_demo.c
+│   ├── fifo_demo.c
+│   ├── signal_demo.c
+│   ├── process_group_demo.c
+│   ├── memory_allocation_demo.c
+│   ├── address_space_demo.c
+│   ├── mmap_demo.c
+│   ├── page_fault_demo.c
+│   ├── cow_demo.c
+│   ├── memory_error_demo.c
+│   ├── file_io_demo.c
+│   ├── file_metadata_demo.c
+│   ├── buffered_io_demo.c
+│   ├── mmap_file_demo.c
+│   ├── filesystem_demo.c
+│   ├── semaphore_demo.c
+│   ├── race_mutex_demo.c
+│   ├── deadlock_demo.c
+│   └── advanced_sync_demo.c
+│
 ├── Makefile
-└── README.md
+├── README.md
+└── .gitignore
 ```
 
 ---
 
-## Module Description
+# 6. Building the Project
 
-### `task.h`
+Clone the repository:
 
-Defines the basic task structure.
-
-A task contains:
-
-* Task ID
-* Task function
-* Task argument
-* Cleanup callback
-* Priority
-* State
-* Result
-* Cancellation information
-* Submission sequence number
-* Timing information
-
-Task states include:
-
-```text
-QUEUED
-RUNNING
-COMPLETED
-FAILED
-CANCELLED
+```bash
+git clone https://github.com/velaga-akshaya-09/TaskForge.git
 ```
 
----
+Enter the project:
 
-### `queue.h` / `queue.c`
-
-Implements the linked-list task queue.
-
-The queue supports:
-
-* Initialization
-* Insertion
-* Removal from the front
-* Removing a specific task
-* Size checking
-* Empty checking
-* Destruction
-
-The queue itself provides the basic data structure, while the scheduler determines where a task should be inserted.
-
----
-
-### `scheduler.h` / `scheduler.c`
-
-Implements priority scheduling.
-
-When a task is submitted, the scheduler inserts it into the queue according to:
-
-1. Higher priority first
-2. Earlier submission sequence for equal priority
-
-For example:
-
-```text
-Task A → LOW
-Task B → HIGH
-Task C → NORMAL
-Task D → CRITICAL
+```bash
+cd TaskForge
 ```
 
-The queue becomes:
-
-```text
-Task D → CRITICAL
-Task B → HIGH
-Task C → NORMAL
-Task A → LOW
-```
-
----
-
-### `worker.h` / `worker.c`
-
-Contains the worker-thread implementation.
-
-Each worker repeatedly:
-
-1. Locks the engine mutex.
-2. Waits if the queue is empty.
-3. Retrieves the next scheduled task.
-4. Changes its state to `RUNNING`.
-5. Executes the task.
-6. Records the execution time.
-7. Changes the task state to `COMPLETED` or `FAILED`.
-8. Updates statistics.
-9. Signals waiting threads.
-10. Executes the cleanup callback.
-
-Workers are reused for multiple tasks.
-
----
-
-### `stats.h` / `stats.c`
-
-Maintains runtime statistics.
-
-Tracked values include:
-
-```text
-Submitted
-Completed
-Failed
-Cancelled
-Peak queue size
-Average execution time
-Maximum execution time
-```
-
-Execution time is measured in microseconds.
-
----
-
-### `taskforge.h` / `taskforge.c`
-
-Contains the main TaskForge engine.
-
-The engine manages:
-
-* Worker threads
-* Task queue
-* Task registry
-* Mutex
-* Condition variables
-* Task IDs
-* Submission sequence numbers
-* Active task count
-* Statistics
-
-Important APIs include:
-
-```c
-taskforge_init()
-taskforge_submit()
-taskforge_wait()
-taskforge_cancel()
-taskforge_wait_all()
-taskforge_print_task()
-taskforge_print_stats()
-taskforge_shutdown()
-```
-
----
-
-### `cli.h` / `cli.c`
-
-Provides the interactive command-line interface.
-
-Available commands:
-
-```text
-help
-submit
-status <id>
-cancel <id>
-wait <id>
-waitall
-stats
-shutdown
-exit
-```
-
----
-
-## Thread Synchronization
-
-TaskForge uses POSIX synchronization primitives.
-
-### Mutex
-
-A mutex protects shared engine data.
-
-```c
-pthread_mutex_t mutex;
-```
-
-It prevents multiple threads from modifying the task queue and task states simultaneously.
-
----
-
-### Condition Variables
-
-TaskForge uses condition variables for communication between workers and waiting threads.
-
-The task-available condition variable:
-
-```c
-pthread_cond_t task_available;
-```
-
-allows workers to sleep when there are no tasks.
-
-The all-tasks-done condition variable:
-
-```c
-pthread_cond_t all_tasks_done;
-```
-
-allows the engine to wait until there are no active or queued tasks.
-
-Each task also has a completion condition variable:
-
-```c
-pthread_cond_t completed;
-```
-
-which allows a caller to wait for a specific task.
-
----
-
-## Task Lifecycle
-
-A task follows this general lifecycle:
-
-```text
-          submit
-             |
-             v
-         QUEUED
-             |
-             v
-         RUNNING
-          /     \
-         /       \
-        v         v
-   COMPLETED    FAILED
-```
-
-A queued task can also be cancelled:
-
-```text
-QUEUED
-   |
-   | cancel
-   v
-CANCELLED
-```
-
-Running tasks cannot be cancelled by the current API.
-
----
-
-## Task Submission
-
-When a task is submitted:
-
-1. A `Task` structure is allocated.
-2. A unique task ID is assigned.
-3. A submission sequence number is assigned.
-4. The task is registered.
-5. The scheduler inserts it according to priority.
-6. Statistics are updated.
-7. A worker is notified.
-
-Example:
-
-```text
-TaskForge> submit
-
-Task duration in seconds: 2
-
-Priority levels:
-1. LOW
-2. NORMAL
-3. HIGH
-4. CRITICAL
-Select priority: 3
-
-Task submitted successfully. ID = 1
-```
-
----
-
-## Task Execution
-
-A worker retrieves the highest-priority queued task and executes its function.
-
-Example:
-
-```text
-[TASK 1] Started | Worker executing for 2 sec
-[TASK 1] Completed
-```
-
-The worker records the start and finish timestamps and calculates the execution time.
-
----
-
-## Task Status
-
-The `status` command displays information about an individual task.
-
-Example:
-
-```text
-TaskForge> status 1
-
-Task Information
-----------------
-ID        : 1
-Priority  : HIGH
-State     : COMPLETED
-Result    : 0
-Sequence  : 1
-Execution : 2000496 us
-```
-
-A result of:
-
-```text
-0
-```
-
-represents successful execution.
-
-A non-zero result represents a failed task.
-
----
-
-## Cancellation
-
-TaskForge supports cancellation of queued tasks.
-
-Example:
-
-```text
-TaskForge> cancel 10
-Task 10 cancelled.
-```
-
-A task that is already running cannot be cancelled:
-
-```text
-TaskForge> cancel 2
-Task 2 cannot be cancelled (already running or finished).
-```
-
-This prevents the engine from forcibly terminating a worker while it is executing user code.
-
----
-
-## Waiting for Tasks
-
-### Wait for one task
-
-```text
-wait <id>
-```
-
-Example:
-
-```text
-TaskForge> wait 1
-Task 1 finished.
-```
-
-### Wait for all tasks
-
-```text
-waitall
-```
-
-Example:
-
-```text
-TaskForge> waitall
-Waiting for all tasks...
-All tasks finished.
-```
-
----
-
-## Statistics
-
-The `stats` command displays engine statistics.
-
-Example:
-
-```text
-TaskForge> stats
-
-TaskForge Statistics
---------------------
-Submitted       : 1
-Completed       : 1
-Failed          : 0
-Cancelled       : 0
-Queue Peak      : 1
-Average Time    : 2000488.00 us
-Maximum Time    : 2000488 us
-```
-
-Average execution time is calculated from completed and failed tasks.
-
-Cancelled tasks are not included in execution-time calculations because they were never executed.
-
----
-
-## Building the Project
-
-The project uses `gcc` and `make`.
-
-Build the main application with:
+Build the main TaskForge application:
 
 ```bash
 make
 ```
 
-A successful build produces:
+Build all demonstrations:
 
-```text
-taskforge
+```bash
+make demos
+```
+
+Build the test programs:
+
+```bash
+make tests
 ```
 
 ---
 
-## Running TaskForge
-
-Start the interactive engine with:
+# 7. Running TaskForge
 
 ```bash
 ./taskforge
 ```
 
-The engine starts with three worker threads.
-
-Example:
+Then use:
 
 ```text
-========================================
-          TASKFORGE ENGINE
-========================================
-Initializing worker pool...
-Worker threads: 3
-Engine status : READY
+help
 ```
+
+to display the available commands.
 
 ---
 
-## Running Tests
+# 8. Running Tests
 
-Build and run all automated tests using:
+Run the complete automated test suite:
 
 ```bash
 make test
 ```
 
-The test suite contains:
-
-### Priority Test
+The test suite includes:
 
 ```text
 test_taskforge
-```
-
-Tests task submission, priorities, execution, and statistics.
-
-### Cancellation Test
-
-```text
 test_cancel
-```
-
-Tests cancellation of queued tasks.
-
-### Failure Test
-
-```text
 test_failure
-```
-
-Tests successful and failed task execution.
-
-### Stress Test
-
-```text
 test_stress
 ```
 
-Submits and executes 100 tasks.
+The tests verify:
 
-Example successful result:
+* Priority scheduling
+* Task cancellation
+* Task failure handling
+* Large-scale task submission
+* Worker-thread execution
+* Task statistics
 
-```text
-Submitted       : 100
-Completed       : 100
-Failed          : 0
-Cancelled       : 0
-Queue Peak      : 97
+---
 
-STRESS TEST PASSED
+# 9. Running CO Demonstrations
+
+Build all demonstrations:
+
+```bash
+make demos
+```
+
+## CO-1
+
+```bash
+./os_service_demo
+./command_execution_demo
+```
+
+## CO-2
+
+```bash
+./process_lifecycle_demo
+./process_scheduling_demo
+./process_pitfall_demo
+```
+
+## CO-3
+
+```bash
+./pipe_demo
+./fifo_demo
+./signal_demo
+./process_group_demo
+```
+
+## CO-4
+
+```bash
+./memory_allocation_demo
+./address_space_demo
+./mmap_demo
+./page_fault_demo
+./cow_demo
+make memory_error_demo
+./memory_error_demo
+```
+
+## CO-5
+
+```bash
+./file_io_demo
+./file_metadata_demo
+./buffered_io_demo
+./mmap_file_demo
+./filesystem_demo
+```
+
+## CO-6
+
+```bash
+./semaphore_demo
+./race_mutex_demo
+./deadlock_demo
+./advanced_sync_demo
 ```
 
 ---
 
-## Cleaning the Project
+# 10. Cleaning the Build
 
-Remove compiled objects, executables, and test binaries using:
+Remove generated executables and object files:
 
 ```bash
 make clean
 ```
 
+Rebuild everything:
+
+```bash
+make
+make demos
+```
+
 ---
 
-## Compiler Configuration
+# 11. Technologies Used
 
-The project is compiled using strict compiler warnings:
+* C
+* Linux
+* POSIX API
+* POSIX Threads
+* pthreads
+* Linux system calls
+* GCC
+* Make
+* AddressSanitizer
+* Linux `/proc` interface
+* IPC mechanisms
+* Linux virtual memory interfaces
+
+---
+
+# 12. Learning Outcomes
+
+After completing the project, the implementation and demonstrations provide practical experience with:
+
+1. Linux system programming
+2. Processes and process control
+3. Inter-process communication
+4. Virtual memory concepts
+5. Dynamic memory management
+6. Linux file I/O
+7. File metadata and filesystem interfaces
+8. POSIX threads
+9. Synchronization primitives
+10. Race conditions and deadlocks
+11. Memory debugging
+12. Concurrent task execution
+
+---
+
+# 13. Important Technical Notes
+
+The demonstrations operate primarily from user space using standard Linux and POSIX interfaces.
+
+Some operating-system internals cannot be directly inspected from an ordinary user-space application. Therefore:
+
+* The page-fault demonstration observes process-level minor page-fault counts rather than directly displaying kernel page tables.
+* The copy-on-write demonstration demonstrates the process-visible behavior of COW; identical virtual addresses alone do not prove identical physical pages.
+* The filesystem demonstration reports filesystem information exposed by Linux. The underlying storage implementation depends on the execution environment.
+* System-call/file-descriptor I/O is described as "unbuffered" relative to C stdio; Linux may still cache file data inside the kernel.
+* The memory-error demonstration intentionally triggers an invalid memory access and is expected to produce an AddressSanitizer report.
+
+---
+
+# 14. Conclusion
+
+TaskForge combines a practical thread-pool task engine with Linux systems-programming demonstrations.
+
+The core engine demonstrates real concurrent task execution using POSIX threads, mutexes, condition variables, priority scheduling, cancellation, task waiting, failure handling, statistics, and cleanup.
+
+The additional demonstrations extend the project into operating-system concepts involving processes, IPC, memory management, file systems, file I/O, concurrency, and synchronization.
+
+The project therefore serves as both:
 
 ```text
--Wall
--Wextra
--Wpedantic
--std=c11
+A practical C thread-pool implementation
+                 +
+A Linux operating-system concepts demonstrator
 ```
-
-POSIX functionality is enabled using:
-
-```text
--D_POSIX_C_SOURCE=200809L
-```
-
-The pthread library is linked using:
-
-```text
--pthread
-```
-
----
-
-## Concurrency Model
-
-TaskForge follows a producer-consumer model.
-
-```text
-                 +----------------+
-                 |    CLI / User  |
-                 +-------+--------+
-                         |
-                         | Submit
-                         v
-                +-------------------+
-                |   Task Scheduler  |
-                +---------+---------+
-                          |
-                          v
-                +-------------------+
-                |   Shared Queue    |
-                +---------+---------+
-                          |
-              +-----------+-----------+
-              |           |           |
-              v           v           v
-          Worker 1    Worker 2    Worker 3
-              |           |           |
-              +-----------+-----------+
-                          |
-                          v
-                    Task Execution
-```
-
-The workers continuously consume tasks from the shared queue.
-
----
-
-## Cleanup Callbacks
-
-Each task can optionally provide a cleanup function.
-
-The cleanup callback is used to release task-specific resources after execution or cancellation.
-
-This allows TaskForge to separate:
-
-```text
-Task execution
-```
-
-from:
-
-```text
-Task resource cleanup
-```
-
-For example:
-
-```c
-taskforge_submit(
-    &engine,
-    my_task,
-    argument,
-    my_cleanup,
-    PRIORITY_NORMAL
-);
-```
-
----
-
-## Design Goals
-
-TaskForge was designed to demonstrate the following systems concepts:
-
-* Multithreading
-* Thread pools
-* Mutual exclusion
-* Condition variables
-* Producer-consumer synchronization
-* Priority scheduling
-* FIFO scheduling
-* Task lifecycle management
-* Task cancellation
-* Failure handling
-* Performance measurement
-* Resource cleanup
-* Graceful shutdown
-* Concurrent workload testing
-
----
-
-## Current Limitations
-
-The current implementation intentionally keeps the design lightweight.
-
-Some limitations include:
-
-* Running tasks cannot be cancelled.
-* Completed tasks remain in the task registry until shutdown.
-* The shutdown operation is intended to be performed once.
-* Priority ordering can only affect tasks that are still waiting in the queue; tasks already running cannot be preempted.
-* The interactive CLI is intended for demonstration and testing rather than production use.
-
----
-
-## Future Improvements
-
-Possible future enhancements include:
-
-* Stronger priority-ordering tests
-* Dynamic worker-pool resizing
-* Task timeouts
-* Retry support for failed tasks
-* Task dependencies
-* More detailed per-worker statistics
-* Queue wait-time statistics
-* Improved CLI formatting
-* Configuration files
-* Logging support
-* Graceful handling of more shutdown scenarios
-* Automated memory checking
-* Additional concurrency tests
-
----
-
-## Conclusion
-
-TaskForge demonstrates how a thread-pool-based task engine can be implemented from scratch in C using POSIX threads.
-
-The project combines task management, priority scheduling, synchronization, worker-thread execution, cancellation, statistics, cleanup handling, an interactive CLI, and automated stress testing into a single system.
-
-It provides a practical demonstration of operating-system and concurrent-programming concepts while remaining small enough to understand and extend.
