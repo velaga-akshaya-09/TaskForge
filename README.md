@@ -1,4 +1,4 @@
-# TaskForge — A Thread-Pool Task Engine and Linux Systems Programming Demonstrator
+# TaskForge — A Thread-Pool Task Engine and Linux Systems Programming Demonstrator.
 
 TaskForge is a lightweight C-based task execution engine built using POSIX threads. It provides a reusable worker-thread pool, priority-based task scheduling, task cancellation, synchronization, task monitoring, statistics, and an interactive command-line interface.
 
